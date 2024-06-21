@@ -1,22 +1,48 @@
 // create web server
-// create a web server that listens to port 3000
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
 
-// create a web server that listens to port 3000
-http.createServer((req, res) => {
-  const { pathname } = url.parse(req.url);
-  const filePath = path.join(__dirname, 'public', pathname);
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      res.statusCode = 404;
-      res.end('404 - Not Found');
-      return;
-    }
-    res.end(data);
-  });
-}).listen(3000, () => {
-  console.log('Server is running at http://localhost:3000');
+const express = require('express');
+const app = express();
+const path = require('path');
+const fs = require('fs');
+
+// use static files
+app.use(express.static('public'));
+
+// use json
+app.use(express.json());
+
+// get comments
+app.get('/comments', (req, res) => {
+    fs.readFile('comments.json', (error, data) => {
+        if (error) {
+            res.status(500).send('Error reading comments.json');
+            return;
+        }
+        res.json(JSON.parse(data));
+    });
+});
+
+// add comment
+app.post('/comments', (req, res) => {
+    const comment = req.body;
+    fs.readFile('comments.json', (error, data) => {
+        if (error) {
+            res.status(500).send('Error reading comments.json');
+            return;
+        }
+        const comments = JSON.parse(data);
+        comments.push(comment);
+        fs.writeFile('comments.json', JSON.stringify(comments), (error) => {
+            if (error) {
+                res.status(500).send('Error writing comments.json');
+                return;
+            }
+            res.send('Comment added');
+        });
+    });
+});
+
+// start the server
+app.listen(3000, () => {
+    console.log('Server started');
 });
